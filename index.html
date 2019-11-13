@@ -1,0 +1,99 @@
+<html>
+<head>
+    <title>Week7 - Mpas</title>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="neighborhoods.js"></script>
+    <script src="points.js"></script>
+
+<style>
+    #neighborhoods path{
+        fill: #ccc;
+    }
+    #points path{
+        fill: #900;
+        stroke: #999;
+    }
+    #points path:hover{
+        fill: black;
+    }
+</style>
+</head>
+<body>
+    <script>
+    var width = 700,
+        height = 580;
+    
+    var svg = d3.select( "body" )
+      .append( "svg" )
+      .attr( "width", width )
+      .attr( "height", height );
+    
+    var neighborhoods = svg.append( "g" ).attr( "id", "neighborhoods" );
+
+    var albersProjection = d3.geoAlbers()
+    .scale(190000)
+    .rotate([71.057, 0])
+    .center([0, 42.313])
+    .translate([width/2, height/2]);
+
+    d3.json("./points.json", function populate(data) {
+    
+    let repeat = () => {
+        
+        // Uncomment following line to clear the previously drawn line
+        svg.selectAll("path").remove();
+
+        // Set a light grey class on old paths
+        svg.selectAll("path").attr("class", "old");
+
+        // d3's line generator
+        const line = d3.line()
+        .x(d => albersProjection(d['geometry']['coordinates'])[0])
+        .y(d => albersProjection(d['geometry']['coordinates'])[1])
+
+        // append line to svg
+        var path = svg.append("path")
+        .datum(points_json.features)
+        .attr("d", line)
+        .style("fill-opacity", "0")
+        .attr("stroke", "grey")
+        .style("stroke-width","3");
+
+        var totalLength = path.node().getTotalLength();
+
+        path
+        .attr("stroke-dasharray", totalLength + " " + totalLength)
+        .attr("stroke-dashoffset", totalLength)
+        .transition()
+            .duration(4000)
+            .ease(d3.easeLinear)
+            .attr("stroke-dashoffset", 0)
+            .on("end", repeat);
+
+        var geoPath = d3.geoPath()
+        .projection(albersProjection);
+
+        neighborhoods.selectAll('path')
+        .data(neighborhoods_json.features)
+        .enter()
+        .append('path')
+        .attr('fill', '#ccc')
+        .attr('d', geoPath);
+
+        var points = svg.append('g');
+
+        points.selectAll('path')
+        .data(points_json.features)
+        .enter()
+        .append('path')
+        .attr('fill', '#900')
+        .attr('stroke', '#999')
+        .attr('d', geoPath);
+    };
+    repeat();
+
+    });
+
+    </script>
+</body>
+</html>
